@@ -1,0 +1,39 @@
+.data
+values: .word
+max_values: .word 0
+min_values: .word 0
+med_values: .word 0
+count: .word 0
+
+	la t0,max_values
+	lw s0,0(t0)
+	la t0,min_values
+	lw s1,0(t0)
+	la t0,med_values
+	lw s2,0(t0)
+	la t0,count
+	lw s3,0(t0)
+.text
+
+main:
+	li a7,5
+	ecall
+	bgt a0,zero,end_program
+	
+	
+teste:	
+	bgt a0,s0, max_values
+	blt a0,s1, min_values
+	
+	
+max_values:
+	bgt s0,zero,a0
+	j check
+	
+min_values:
+	blt s0,zero,a0
+	j check
+check:
+
+end_program:
+
