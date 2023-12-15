@@ -4,11 +4,11 @@ use ieee.numeric_std.all;
 
 entity trabfinal is
     port (
-        SW   : in std_logic_vector(9 downto 0); -- coordenadas
-        KEY  : in std_logic_vector(3 downto 0); -- clock = key(0) & reset = key(3)
+        SW   : in std_logic_vector(9 downto 0);
+        KEY  : in std_logic_vector(3 downto 0); 
 
-        LEDR : out std_logic_vector(9 downto 0); -- tiros acertados
-        LEDG : out std_logic_vector(7 downto 0); -- tiros errados
+        LEDR : out std_logic_vector(9 downto 0); 
+        LEDG : out std_logic_vector(7 downto 0); 
         HEX0 : out std_logic_vector(6 downto 0);
         HEX1 : out std_logic_vector(6 downto 0);
         HEX2 : out std_logic_vector(6 downto 0);
@@ -23,7 +23,7 @@ architecture batalhaNaval_behav of trabfinal is
     signal state        : state_type := B;
     signal balasCanhao  : integer range 0 to 6 := 6 ;
     signal navio1, navio2, navio2_1: std_logic_vector(3 downto 0);
-    signal tirosAcertados : std_logic_vector(3 downto 0) := "0000";
+    signal tirosAcertados : std_logic_vector(2 downto 0) := "000";
 
     function analisar (
         cordenada_in: in std_logic_vector(3 downto 0))
@@ -116,7 +116,7 @@ begin
                     else 
                         navio2 <= aux_navio;
 
-                        if(sw(9) = '0') then -- escolher linha vertical
+                        if(sw(9) = '0') then -- escolhe a linha vertical
                             if (coord_barco(3) = '1') and (coord_barco(2) = '1') then 
                                 LEDR <= "1111111";
                             else 
@@ -134,13 +134,13 @@ begin
                                         LEDR(i) <= aux_navio_cauda(i);
                                     end loop;
 
+                                    LEDG(6) <= '1';
                                     LEDG(5) <= '1';
-                                    LEDG(4) <= '1';
                                     state <= S;
                                     LEDR <= "0000000000";
                                 end if;
                             end if;
-                        else
+                        else			-- se não escolhe a linha horizontal
                             if (coord_barco(3) = '1') and (coord_barco(2) = '1') then 
                                 LEDR <= "1111111";
                             else 
@@ -158,8 +158,8 @@ begin
                                         LEDR(i) <= aux_navio_cauda(i);
                                     end loop;
 
+                                    LEDG(6) <= '1';
                                     LEDG(5) <= '1';
-                                    LEDG(4) <= '1';
                                     state <= S;
                                     LEDR <= "0000000000";
                                 end if;
@@ -198,7 +198,7 @@ begin
                         tirosAcertados <= auxshots;
                     end if;
 
-                    if tirosAcertados = "1111" then
+                    if tirosAcertados = "111" then
                         state <= V;
                     elsif balasCanhao < 1 then
                         state <= L;
@@ -262,16 +262,16 @@ begin
                 HEX0 <= "1111111";
 
             when V2 =>
-                HEX3 <= "0011001";
+                HEX3 <= "0000010";
                 HEX2 <= "1000000";
-                HEX1 <= "1000001";
-                HEX0 <= "1111111";
+                HEX1 <= "1000000";
+                HEX0 <= "0100001";
 
             when L =>
-                HEX3 <= "0011001";
-                HEX2 <= "1000000";
-                HEX1 <= "1000001";
-                HEX0 <= "1111111";
+				HEX3 <= "0011001";
+				HEX2 <= "1000000";
+				HEX1 <= "1000001";
+				HEX0 <= "1111111";
 
             when L2 =>
                 HEX3 <= "1000111";
