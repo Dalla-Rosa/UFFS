@@ -2,158 +2,214 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity batalhaNaval is
+entity trabfinal is
     port (
-        SW : in std_logic_vector(9 downto 0); -- coordenadas
-        KEY : in std_logic_vector(3 downto 0); -- clock = key(0) & reset = key(3)
+        SW   : in std_logic_vector(9 downto 0); -- coordenadas
+        KEY  : in std_logic_vector(3 downto 0); -- clock = key(0) & reset = key(3)
 
         LEDR : out std_logic_vector(9 downto 0); -- tiros acertados
         LEDG : out std_logic_vector(7 downto 0); -- tiros errados
         HEX0 : out std_logic_vector(6 downto 0);
         HEX1 : out std_logic_vector(6 downto 0);
         HEX2 : out std_logic_vector(6 downto 0);
-        HEX3 : out std_logic_vector(6 downto 0);
+        HEX3 : out std_logic_vector(6 downto 0)
     );
-end batalhaNaval;
+end trabfinal;
 
-architecture batalhaNaval_behav of batalhaNaval is
+architecture batalhaNaval_behav of trabfinal is
 
-    type state_type is (B, P1, P2, S, V, L);
+    type state_type is (B, P1, P2, S, V, V2, L, L2);
 
-    signal state : state_type := B;
-    signal tiros : integer range 0 to 6 := 6;
-    signal navio1, navio2 : std_logic_vector(3 downto 0);
+    signal state        : state_type := B;
+    signal balasCanhao  : integer range 0 to 6 := 6 ;
+    signal navio1, navio2, navio2_1: std_logic_vector(3 downto 0);
     signal tirosAcertados : std_logic_vector(3 downto 0) := "0000";
 
-    function codificar (
+    function analisar (
         cordenada_in: in std_logic_vector(3 downto 0))
-        return std_logic_vector is
-        variable code_out : std_logic_vector(3 downto 0);
+        return std_logic_vector is 
+        variable codigo_saida : std_logic_vector(3 downto 0);
     begin
         if cordenada_in = "0000" then
-            code_out := "0001";
+            codigo_saida := "0001";
         elsif cordenada_in = "0001" then
-            code_out := "0010";
+            codigo_saida := "0010";
         elsif cordenada_in = "0010" then
-            code_out := "0100";
+            codigo_saida := "0100";
         elsif cordenada_in = "0011" then
-            code_out := "1000";
+            codigo_saida := "1000";
         elsif cordenada_in = "0100" then
-            code_out := "1001";
+            codigo_saida := "1001";
         elsif cordenada_in = "0101" then
-            code_out := "1010";
+            codigo_saida := "1010";
         elsif cordenada_in = "0110" then
-            code_out := "1100";
+            codigo_saida := "1100";
         elsif cordenada_in = "0111" then
-            code_out := "1110";
+            codigo_saida := "1110";
         elsif cordenada_in = "1000" then
-            code_out := "1011";
+            codigo_saida := "1011";
         elsif cordenada_in = "1001" then
-            code_out := "0101";
+            codigo_saida := "0101";
         elsif cordenada_in = "1010" then
-            code_out := "0111";
+            codigo_saida := "0111";
         elsif cordenada_in = "1011" then
-            code_out := "0110";
+            codigo_saida := "0110";
         elsif cordenada_in = "1100" then
-            code_out := "1111";
+            codigo_saida := "1111";
         elsif cordenada_in = "1101" then
-            code_out := "0000";
+            codigo_saida := "0000";
         elsif cordenada_in = "1110" then
-            code_out := "1101";
+            codigo_saida := "1101";
         elsif cordenada_in = "1111" then
-            code_out := "0011";
+            codigo_saida := "0011";
         end if;
-        return code_out;
+        return codigo_saida;
     end function;
 
 begin
     process(KEY)
-        variable aux_navio : std_logic_vector(3 downto 0);
-        variable coord_b : std_logic_vector(3 downto 0);
-        variable auxtiros : std_logic_vector(3 downto 0);
-        variable auxmunicoes : integer range 0 to 6;
+        variable aux_navio          : std_logic_vector(3 downto 0);
+        variable aux_navio_cauda    : std_logic_vector(3 downto 0);
+        variable coord_barco        : std_logic_vector(3 downto 0);
+        variable auxshots           : std_logic_vector(3 downto 0);
+        variable auxbalasCanhao     : integer range 0 to 6;
     begin
         if KEY(0) = '0' then
             state <= B;
-            LEDR <= "0000000000";
-            LEDG <= "00000000";
+            LEDR  <= "0000000000";
+            LEDG  <= "00000000";
             tirosAcertados <= "0000";
         elsif (KEY(1)'event and KEY(1) = '0') then
             case state is
                 when B =>
                     state <= P1;
-                    tiros <= 6;
+                    balasCanhao <= 6;
 
                 when P1 =>
-                    coord_b(0) := SW(0);
-                    coord_b(1) := SW(1);
-                    coord_b(2) := SW(2);
-                    coord_b(3) := SW(3);
+                    coord_barco(0) := SW(0);
+                    coord_barco(1) := SW(1);
+                    coord_barco(2) := SW(2);
+                    coord_barco(3) := SW(3);
 
-                    aux_navio := codificar(coord_b);
+                    aux_navio := analisar(coord_barco);
                     navio1 <= aux_navio;
 
-                    LEDR <= (others => '0');
-                    LEDR(0) <= '1';
+                    LEDR(0) <= aux_navio(0);
+                    LEDR(1) <= aux_navio(1);
+                    LEDR(2) <= aux_navio(2);
+                    LEDR(3) <= aux_navio(3);
+
+                    LEDG(7) <= '1';
                     state <= P2;
 
                 when P2 =>
-                    coord_b(0) := SW(0);
-                    coord_b(1) := SW(1);
-                    coord_b(2) := SW(2);
-                    coord_b(3) := SW(3);
+                    LEDR <= "0000000000";
 
-                    aux_navio := codificar(coord_b);
-                    navio2 <= aux_navio;
+                    coord_barco(0) := SW(0);
+                    coord_barco(1) := SW(1);
+                    coord_barco(2) := SW(2);
+                    coord_barco(3) := SW(3);
 
-                    if (aux_navio = navio1) then
-                        LEDR <= "1111111111";
-                    else
-                        LEDR <= (others => '0');
-                        LEDR(1) <= '1';
-                        state <= S;
+                    aux_navio := analisar(coord_barco);
+                    if(aux_navio = navio1) then
+                        LEDG(7) <= '1';
+                    else 
+                        navio2 <= aux_navio;
+
+                        if(sw(9) = '0') then -- escolher linha vertical
+                            if (coord_barco(3) = '1') and (coord_barco(2) = '1') then 
+                                LEDR <= "1111111";
+                            else 
+                                aux_navio_cauda := analisar(std_logic_vector(unsigned(coord_barco) + "0100"));
+
+                                navio2_1 <= aux_navio_cauda;
+
+                                if (aux_navio = navio1) or (aux_navio = navio2) or (aux_navio_cauda = navio1) or (aux_navio_cauda = navio2) then
+                                    LEDR <= "111111111";
+                                else
+                                    for i in 0 to 3 loop
+                                        LEDR(i+5) <= aux_navio(i);
+                                    end loop;
+                                    for i in 0 to 3 loop
+                                        LEDR(i) <= aux_navio_cauda(i);
+                                    end loop;
+
+                                    LEDG(5) <= '1';
+                                    LEDG(4) <= '1';
+                                    state <= S;
+                                    LEDR <= "0000000000";
+                                end if;
+                            end if;
+                        else
+                            if (coord_barco(3) = '1') and (coord_barco(2) = '1') then 
+                                LEDR <= "1111111";
+                            else 
+                                aux_navio_cauda := analisar(std_logic_vector(unsigned(coord_barco) + "0100"));
+
+                                navio2_1 <= aux_navio_cauda;
+
+                                if (aux_navio = navio1) or (aux_navio = navio2) or (aux_navio_cauda = navio1) or (aux_navio_cauda = navio2) then
+                                    LEDR <= "111111111";
+                                else
+                                    for i in 0 to 3 loop
+                                        LEDR(i+5) <= aux_navio(i);
+                                    end loop;
+                                    for i in 0 to 3 loop
+                                        LEDR(i) <= aux_navio_cauda(i);
+                                    end loop;
+
+                                    LEDG(5) <= '1';
+                                    LEDG(4) <= '1';
+                                    state <= S;
+                                    LEDR <= "0000000000";
+                                end if;
+                            end if;
+                            end if;
                     end if;
-
                 when S =>
-                    LEDR <= (others => '0');
-                    if tiros > 0 then
-                        coord_b(0) := SW(0);
-                        coord_b(1) := SW(1);
-                        coord_b(2) := SW(2);
-                        coord_b(3) := SW(3);
+                    LEDR <= "0000000000";
+                    if balasCanhao > 0 then
+                        coord_barco(0) := SW(0);
+                        coord_barco(1) := SW(1);
+                        coord_barco(2) := SW(2);
+                        coord_barco(3) := SW(3);
 
-                        auxmunicoes := tiros;
-                        auxtiros := tirosAcertados;
-
-                        if coord_b = navio1 then
-                            auxtiros(0) <= '1';
-                            if auxmunicoes = 1 then
-                                auxmunicoes := auxmunicoes + 1;
-                            end if;
-                        elsif coord_b = navio2 or coord_b = codificar(navio2 + "0001") then
-                            auxtiros(1) <= '1';
-                            if auxmunicoes = 1 then
-                                auxmunicoes := auxmunicoes + 1;
-                            end if;
+                        auxbalasCanhao := balasCanhao;
+                        auxshots := tirosAcertados;
+                        if analisar(coord_barco) = navio1 then
+                            auxshots(0) := '1';
+                            LEDG(7) <= '0';
+                            if auxbalasCanhao = 1 then auxbalasCanhao := auxbalasCanhao + 1; end if;
+                        elsif analisar(coord_barco) = navio2 then
+                            auxshots(1) := '1';
+                            LEDG(6) <= '0';
+                            if auxbalasCanhao = 1 then auxbalasCanhao := auxbalasCanhao + 1; end if;
+                        elsif analisar(coord_barco) = navio2_1 then
+                            auxshots(2) := '1';
+                            LEDG(5) <= '0';
+                            if auxbalasCanhao = 1 then auxbalasCanhao := auxbalasCanhao + 1; end if;
                         else
                             LEDR <= "1111111111";
                         end if;
 
-                        auxmunicoes := auxmunicoes - 1;
+                        auxbalasCanhao := auxbalasCanhao - 1;
+
+                        balasCanhao <= auxbalasCanhao;
+                        tirosAcertados <= auxshots;
                     end if;
 
-                    tiros <= auxmunicoes;
-                    tirosAcertados <= auxtiros;
-
-                    if tirosAcertados = "011" then
+                    if tirosAcertados = "1111" then
                         state <= V;
-                    elsif tiros < 1 then
+                    elsif balasCanhao < 1 then
                         state <= L;
                     end if;
-
                 when V =>
+                    state <= V2;
+                when V2 =>
                     state <= B;
                 when L =>
+                    state <= L2;
+                when L2 =>
                     state <= B;
             end case;
         end if;
@@ -163,66 +219,65 @@ begin
     begin
         case state is
             when B =>
-                HEX3 <= "1111110";
-                HEX2 <= "1111110";
-                HEX0 <= "1111110";
-                HEX1 <= "1111110";
+                HEX3 <= "1000001";
+                HEX2 <= "0001000";
+                HEX1 <= "1001111";
+                HEX0 <= "1111111";
 
             when P1 =>
-                HEX3 <= "1111110";
-                HEX2 <= "1111110";
-                HEX0 <= "1111110";
-                HEX1 <= "0000001";
+                HEX3 <= "0000011";
+                HEX2 <= "0001000";
+                HEX1 <= "1111001";
+                HEX0 <= "1111111";
 
             when P2 =>
-                HEX3 <= "1111110";
-                HEX2 <= "1111110";
-                HEX0 <= "1111110";
-                HEX1 <= "1111110";
+                HEX3 <= "0000011";
+                HEX2 <= "0001000";
+                HEX1 <= "0100100";
+                HEX0 <= "1111111";
 
             when S =>
                 HEX2 <= "1111111";
-                case tiros is
+                case balasCanhao is
                     when 0 =>
-                        HEX3 <= "0000001";
-                        HEX2 <= "1111110";
-
+                        HEX3 <= "1000000";
                     when 1 =>
-                        HEX2 <= "1111110";
-                        HEX3 <= "1111111";
-
+                        HEX3 <= "1111001";
                     when 2 =>
-                        HEX2 <= "1111110";
-                        HEX3 <= "0000110";
-
+                        HEX3 <= "0100100";
                     when 3 =>
-                        HEX2 <= "1111110";
-                        HEX3 <= "0000001";
-
+                        HEX3 <= "0110000";
                     when 4 =>
-                        HEX2 <= "1111110";
-                        HEX3 <= "1111110";
-
+                        HEX3 <= "0011001";
                     when 5 =>
-                        HEX2 <= "1111110";
-                        HEX3 <= "0000000";
-
+                        HEX3 <= "0010010";
                     when 6 =>
-                        HEX2 <= "1111110";
-                        HEX3 <= "0000000";
+                        HEX3 <= "0000010";       
                 end case;
 
             when V =>
-                HEX3 <= "1111110";
-                HEX2 <= "0000111";
-                HEX1 <= "1111110";
-                HEX0 <= "1111110";
+                HEX3 <= "0011001";
+                HEX2 <= "1000000";
+                HEX1 <= "1000001";
+                HEX0 <= "1111111";
+
+            when V2 =>
+                HEX3 <= "0011001";
+                HEX2 <= "1000000";
+                HEX1 <= "1000001";
+                HEX0 <= "1111111";
 
             when L =>
-                HEX3 <= "1111110";
-                HEX2 <= "1111110";
-                HEX1 <= "1111110";
-                HEX0 <= "1111110";
+                HEX3 <= "0011001";
+                HEX2 <= "1000000";
+                HEX1 <= "1000001";
+                HEX0 <= "1111111";
+
+            when L2 =>
+                HEX3 <= "1000111";
+                HEX2 <= "1000000";
+                HEX1 <= "0010010";
+                HEX0 <= "0000110";
         end case;
     end process;
 
