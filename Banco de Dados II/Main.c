@@ -5,52 +5,51 @@
 #define MAX_NAME_LENGTH 20
 #define MAX_ATTRIBUTES 10
 #define MAX_ATTRIBUTE_NAME_LENGTH 20
+#define MAX_LINE_LENGTH 1024
 
 typedef struct {
-    int table_id;
-    char name[MAX_NAME_LENGTH];
+    int id;
+    char logical_name[MAX_NAME_LENGTH];
     char physical_name[MAX_NAME_LENGTH];
 } TableEntry;
 
 typedef struct {
-    int table_id;
-    char name[MAX_ATTRIBUTE_NAME_LENGTH];
+    int id;
+    char att_name[MAX_ATTRIBUTE_NAME_LENGTH];
     char type;
-    char optional;
+    char mandatory;
     int size;
 } AttributeEntry;
 
-int readTableDic(TableEntry *tableDic) {
-    FILE *file = fopen("table.dic", "r");
+void readTableData(char *logicalTableName, TableEntry *tableData) {
+    FILE *file = fopen("table.dic", "rb");
     if (file == NULL) {
         printf("Error: Could not open table.dic\n");
         exit(1);
     }
-    printf("entrou\n");
-    int numTables = 0;
-    while (fscanf(file, "<%d, \"%19[^\"]\", \"%19[^\"]\">\n", &tableDic[numTables].table_id, tableDic[numTables].name, tableDic[numTables].physical_name) == 3) {
-        printf("%d \n", numTables);
-        numTables++;
-        if (numTables >= MAX_NAME_LENGTH) {
-            printf("Error: Too many entries in table.dic\n");
-            exit(1);
+
+    while (fread(tableData, sizeof(TableEntry), 1, file) == 1) {
+        if (strcmp(tableData->logical_name, logicalTableName) == 0) {
+            fclose(file);
+            return;
         }
     }
 
     fclose(file);
-    return numTables;
+    printf("Logical table name not found in table.dic\n");
+    exit(1);
 }
 
-void readAttributeDic(AttributeEntry *attributeDic, int *numAttributes, int tableId) {
-    FILE *file = fopen("att.dic", "r");
+void readAttributeData(AttributeEntry *attributeData, int tableId, int *numAttributes) {
+    FILE *file = fopen("att.dic", "rb");
     if (file == NULL) {
         printf("Error: Could not open att.dic\n");
         exit(1);
     }
 
     *numAttributes = 0;
-    while (fscanf(file, "<%d, \"%19[^\"]\", '%c', '%c', %d>\n", &attributeDic[*numAttributes].table_id, attributeDic[*numAttributes].name, &attributeDic[*numAttributes].type, &attributeDic[*numAttributes].optional, &attributeDic[*numAttributes].size) == 5) {
-        if (attributeDic[*numAttributes].table_id == tableId) {
+    while (fread(&attributeData[*numAttributes], sizeof(AttributeEntry), 1, file) == 1) {
+        if (attributeData[*numAttributes].id == tableId) {
             (*numAttributes)++;
             if (*numAttributes >= MAX_ATTRIBUTES) {
                 printf("Error: Too many attributes in att.dic\n");
@@ -62,25 +61,87 @@ void readAttributeDic(AttributeEntry *attributeDic, int *numAttributes, int tabl
     fclose(file);
 }
 
-void readData(char *fileName, AttributeEntry *attributeDic, int numAttributes) {
-    FILE *file = fopen(fileName, "r");
+void readData(char *fileName, AttributeEntry *attributeData, int numAttributes) {
+    FILE *file = fopen(fileName, "rb");
     if (file == NULL) {
         printf("Error: Could not open data file\n");
         exit(1);
     }
 
+    // Print header box
+    printf("╔");
+    for (int i = 0; i < numAttributes; i++) {
+        for (int j = 0; j < attributeData[i].size + 2; j++) {
+            printf("═");
+        }
+        if (i < numAttributes - 1) {
+            printf("╦");
+        }
+    }
+    printf("╗\n");
+
+    // Print attribute names
+    printf("║");
+    for (int i = 0; i < numAttributes; i++) {
+        printf(" %-*s ║", attributeData[i].size, attributeData[i].att_name);
+    }
+    printf("\n");
+
+    // Print header box
+    printf("╠");
+    for (int i = 0; i < numAttributes; i++) {
+        for (int j = 0; j < attributeData[i].size + 2; j++) {
+            printf("═");
+        }
+        if (i < numAttributes - 1) {
+            printf("╬");
+        }
+    }
+    printf("╣\n");
+
+    // Read and print data
     while (!feof(file)) {
+        printf("║");
         for (int i = 0; i < numAttributes; i++) {
-            char data[MAX_NAME_LENGTH];
-            if (fread(data, 1, attributeDic[i].size, file) != attributeDic[i].size) {
-                printf("Error reading data file\n");
-                exit(1);
+            switch (attributeData[i].type) {
+                case 'I': {
+                    int intValue;
+                    fread(&intValue, sizeof(int), 1, file);
+                    printf(" %*d ║", attributeData[i].size - 1, intValue);
+                    break;
+                }
+                case 'D': {
+                    double doubleValue;
+                    fread(&doubleValue, sizeof(double), 1, file);
+                    printf(" %*.*lf ║", attributeData[i].size - 1, 6, doubleValue);
+                    break;
+                }
+                case 'S': {
+                    char stringValue[MAX_LINE_LENGTH];
+                    fread(stringValue, attributeData[i].size, 1, file);
+                    stringValue[attributeData[i].size] = '\0'; // Null-terminate the string
+                    printf(" %-*s ║", attributeData[i].size - 1, stringValue);
+                    break;
+                }
+                default:
+                    printf("Unknown type\n");
+                    break;
             }
-            data[attributeDic[i].size] = '\0';
-            printf("%s ", data);
         }
         printf("\n");
     }
+
+    // Print footer box
+    printf("╚");
+    for (int i = 0; i < numAttributes; i++) {
+        for (int j = 0; j < attributeData[i].size + 2; j++) {
+            printf("═");
+        }
+        if (i < numAttributes - 1) {
+            printf("╩");
+        }
+    }
+    printf("╝\n");
 
     fclose(file);
 }
@@ -92,33 +153,14 @@ int main(int argc, char *argv[]) {
     }
 
     char *logicalTableName = argv[1];
-    TableEntry tableDic[MAX_NAME_LENGTH];
-    int numTables = readTableDic(tableDic);
+    TableEntry tableData;
+    readTableData(logicalTableName, &tableData);
 
-    int tableId = -1;
-    for (int i = 0; i < numTables; i++) {
-        printf("%d \n", tableDic[i].table_id);
-        if (strcmp(tableDic[i].name, logicalTableName) == 0) {
-            tableId = tableDic[i].table_id;
-            break;
-        }
-    }
-
-    if (tableId == -1) {
-        printf("Logical table name not found in table.dic\n");
-        return 1;
-    }
-
-    AttributeEntry attributeDic[MAX_ATTRIBUTES];
+    AttributeEntry attributeData[MAX_ATTRIBUTES];
     int numAttributes;
-    readAttributeDic(attributeDic, &numAttributes, tableId);
+    readAttributeData(attributeData, tableData.id, &numAttributes);
 
-    if (numAttributes == 0) {
-        printf("No attributes found for table %s\n", logicalTableName);
-        return 1;
-    }
-
-    readData(tableDic[tableId - 1].physical_name, attributeDic, numAttributes);
+    readData(tableData.physical_name, attributeData, numAttributes);
 
     return 0;
 }
