@@ -6,7 +6,7 @@
 
 
 
--- Professor, nao consegui arrumar para que o script rodasse de uma vez dentro do psql da minha maquina (apartir dos comandos do psql) mas se copiar cada um dos comentarios separados ele ira funcionar
+-- Professor, nao consegui arrumar para que o script rodasse de uma vez só dentro do psql da minha maquina (apartir dos comandos do psql) mas se copiar cada um dos comentarios separados ele ira funcionar
 
 
 
@@ -36,7 +36,7 @@ create user pingu password 'pingu' superuser;
 create database mydb tablespace tb01;
 
 --Acesse o banco criado
-\c mydb; 
+\c mydb;  
           
 --Crie um esquema (PSQL)
 create schema desenv; 
