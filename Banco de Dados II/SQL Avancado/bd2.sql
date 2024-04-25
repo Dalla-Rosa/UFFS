@@ -4,40 +4,51 @@
 
 
 
--- 1. Crie duas tablespaces (CMD)
--- Acessar a pasta raiz: cd / 
-	sudo mkdir mytbs 
-	cd mytbs 
-	sudo mkdir tb01 
-	sudo mkdir tb02 
-	sudo chown postgres.postgres mytbs 
-	sudo chown postgres.postgres tb01 
-	sudo chown postgres.postgres tb02
- 
-	create tablespace tb01 location 'mytbs/tb01'; 
-	create tablespace tb02 location 'mytbs/tb02'; 
 
--- 2. Crie dois usuários (PSQL)
-	create user bernardo password 'bernardo' superuser; 
-	create user pingu password 'pingu' login superuser; 
 
--- 3. Crie um esquema (PSQL)
-   create schema desenv; 
-       
--- 4. Aponte o esquema criado como padrão para um dos usuários (PSQL)
-	grant usage on schema desenv to pingu; 
+-- Professor, nao consegui arrumar para que o script rodasse de uma vez dentro do psql da minha maquina (apartir dos comandos do psql) mas se copiar cada um dos comentarios separados ele ira funcionar
 
--- 5. Crie um banco de dados utilizando uma das tablespaces criadas como default (procure na documentação as opções de create database) (PSQL)
-	create database mydb tablespace tb01; 
 
--- 6. Acesse o banco criado
-   \c mydb; 
+
+
+
+
+
+
+--Crie duas tablespaces (CMD)
+--Acessar a pasta raiz: 
+sudo mkdir tb01;
+sudo mkdir tb02;
+
+sudo chown postgres.postgres tb01 
+sudo chown postgres.postgres tb02
+   
+psql -U postgres -h localhost
+ 	
+create tablespace tb01 owner postgres location '/tb01'; 
+create tablespace tb02 owner postgres location '/tb02'; 
+
+--Crie dois usuários (PSQL)
+create user bernardo password 'bernardo' superuser; 
+create user pingu password 'pingu' superuser; 
+
+--Crie um banco de dados utilizando uma das tablespaces criadas como default (procure na documentação as opções de create database) (PSQL)
+create database mydb tablespace tb01;
+
+--Acesse o banco criado
+\c mydb; 
           
--- 7. Altere o dono do BD para um dos usuários criados e o esquema default para o recém criado (procure na documentação as opções do alter database) (PSQL)
-   alter database mydb owner pingu; 
-   alter database mydb set search_path = desenv; 
+--Crie um esquema (PSQL)
+create schema desenv; 
+
+--Aponte o esquema criado como padrão para um dos usuários (PSQL)
+alter user pingu set search_path to desenv;
+
+--Altere o dono do BD para um dos usuários criados e o esquema default para o recém criado (procure na documentação as opções do alter database) (PSQL)
+alter database mydb owner to pingu; 
+set search_path to desenv; 
        
--- 8. Crie o script do banco de dados utilizado em aulas anteriores (produto x venda) - a tabela sales foi alterada (acerte o script) (PSQL)
+--Crie o script do banco de dados utilizado em aulas anteriores (produto x venda) - a tabela sales foi alterada (acerte o script) (PSQL)
 CREATE TABLE product (					
 	pid integer not null primary key,				
 	name varchar(30) not null,					
@@ -147,12 +158,12 @@ begin
 
 end; $$;
 
--- 9. Popule o BD com os scripts implementados em sala de aula (1000 produtos, 500 cupons e +1000 produtos vendidos) - a tabela foi alterada, acerte o script (PSQL)
+--Popule o BD com os scripts implementados em sala de aula (1000 produtos, 500 cupons e +1000 produtos vendidos) - a tabela foi alterada, acerte o script (PSQL)
 call ins_product(1000); 
 call ins_sale(500); 
 call ins_sale_item(1000); 
 
--- 10. Crie uma trigger que armazene em uma tabela de auditoria todas as vezes que a quantidade vendida de um produto for alterada (ou uma venda de produto for excluída). A tabela de auditoria deverá ter a operação, o valor antigo e novo (se for o caso), data e hora da operação e usuário. Esta tabela não tem PK (PSQL)    
+--Crie uma trigger que armazene em uma tabela de auditoria todas as vezes que a quantidade vendida de um produto for alterada (ou uma venda de produto for excluída). A tabela de auditoria deverá ter a operação, o valor antigo e novo (se for o caso), data e hora da operação e usuário. Esta tabela não tem PK (PSQL)    
 create table audit(
 opaudit varchar (8) not null,
 old_qt_value integer not null,
@@ -164,36 +175,32 @@ op_audit_time timestamp,
 -- old faz referencia ao estado anterior da linha afetada pela operação que acionou o trigger
 -- new faz referencia ao novo estado da linha que foi afetada pela operação que acionou o trigger
 
-create or replace function operation()
-return trigger as
-$$
+create or replace function operation() returns trigger as $operation$
 begin
    -- se a operação desejada for um update
    if tg-op = 'UPDATE' then
       -- insere na tabela os detalhes do update
-      insert into audit(opaudit, old_qt_value, new_qt_value, user_name, op_audit_time)
-      values ('UPDATE', old.sqty, new.sqty, CURRENT_USER, CURRENT_TIMESTAMP);
+      insert into audit(opaudit, old_qt_value, new_qt_value, user_name, op_audit_time) values ('UPDATE', old.sqty, new.sqty, CURRENT_USER, CURRENT_TIMESTAMP);
+      return old;
    -- se a operação desejada for um delete
-   if tg-op = 'DELETE'  then
+   elsif tg-op = 'DELETE'  then
       -- insere na table os detalhes do delete
-      insert into audit (opaudit, old_qt_value, new_qt_value user_name, op_audit_time)
-      values ('DELETE', old.sqty, new.sqty, CURRENT_USER, CURRENT_TIMESTAMP);
+      insert into audit (opaudit, old_qt_value, new_qt_value, user_name, op_audit_time) values ('DELETE', old.sqty, new.sqty, CURRENT_USER, CURRENT_TIMESTAMP);
+      return new;
    end if;
-   return old;
 end;
-$$
-language plpgsql;
+$operation$ language plpgsql;
 
 create or replace trigger operation
-after update or delete on sale_item
+after update or delete on sale_item	
 for each row execute function operation();
 
 
--- 11.  Crie um índice não único para a data da venda, neste índice, inclua o endereço. (PSQL)
-create INDEX sale_address on sale (sdate, address);
+--Crie um índice não único para a data da venda, neste índice, inclua o endereço. (PSQL)
+create INDEX idx_sale_address on sale (sdate, address);
 
--- 12. Para o usuário não dono do BD, dê alguns privilégios: select em product e sale, todos para sale_item. (PSQL)
+--Para o usuário não dono do BD, dê alguns privilégios: select em product e sale, todos para sale_item. (PSQL)
 
-grant table select product to bernardo;
-grant table select sale to bernardo;
-grant all privileges sale_item to bernardo;
+grant select on product to bernardo;
+grant select on sale to bernardo;
+grant all privileges on sale_item to bernardo;
