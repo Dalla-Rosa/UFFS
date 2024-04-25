@@ -201,6 +201,6 @@ create INDEX idx_sale_address on sale (sdate, address);
 
 --Para o usuário não dono do BD, dê alguns privilégios: select em product e sale, todos para sale_item. (PSQL)
 
-grant select on product to bernardo
-grant select on sale to bernardo
+grant select on product to bernardo;
+grant select on sale to bernardo;
 grant all privileges on sale_item to bernardo;
