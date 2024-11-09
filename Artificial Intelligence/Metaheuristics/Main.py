@@ -76,10 +76,10 @@ def main():
             BuscaLocalPrimeiraMelhora(Vizinhanca25opt(distancias), solucao_otima),  
             BuscaTabu(Vizinhanca2opt(distancias), solucao_otima, 3),
             BuscaTabu(VizinhancaShift(distancias), solucao_otima, 3),
-            BuscaTabu(Vizinhanca25Opt(distancias), solucao_otima, 3), 
+            BuscaTabu(Vizinhanca25opt(distancias), solucao_otima, 3), 
             BuscaTabu(Vizinhanca2opt(distancias), solucao_otima, 5),
             BuscaTabu(VizinhancaShift(distancias), solucao_otima, 5),
-            BuscaTabu(Vizinhanca25Opt(distancias), solucao_otima, 5),  
+            BuscaTabu(Vizinhanca25opt(distancias), solucao_otima, 5),  
         )
         tempo_limite = tamanho * tempo_total_maximo * 60 / amostras / tamanho_total / len(algoritmos)
         print("Instância:", instancias[idx])
