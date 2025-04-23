@@ -1,4 +1,8 @@
-	.data
+
+#precisa organizar os return 0 e 1 !!!!!!
+
+.data
+
 a:		  .space 4
 b:	          .space 4
 c:		  .space 4
