@@ -8,11 +8,11 @@ conta: .word 0
 main:
 	la t0, vetor
     	li t1, 64
-    	li t2, 0    # contador de posiÃ§Ã£o
+    	li t2, 0    # contador de posição
     	li t3, 0    # ocorrencias de 1
     
 loop:
-	bgt t2, t1, fim
+	bge t2, t1, fim
 	lb t4, 0(t0)
 	li t5, 1
 	beq t4, t5, soma
