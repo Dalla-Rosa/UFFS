@@ -1,5 +1,7 @@
 .data
 
+# Bernardo Flores Dalla Rosa - 2211100035
+
 # Mensagens para mostrar no console 
 
 bem_vindo:            .asciz "\nBem-vindo ao Blackjack!\n1 - Jogar\n2 - Sair\nEscolha: "
